@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Irrigation App</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+
+	<!--This lines add JQuery to your website-->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+	<!------------------>
+
+	<link rel="stylesheet" href="https://js.arcgis.com/4.14/esri/themes/light/main.css"/>
+	<link rel="shortcut icon" href="#" />
+	<link rel="icon" type="image/png" href="static/img/shortcut.png">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+	<script src="https://js.arcgis.com/4.14/"></script>
+
+</head>
+<script>
+	// Communcitation between Python and HTML
+	$(document).ready(function(){
+		// sending a connect request to the server.
+		var socket = io.connect('http://localhost:5000');
+
+		socket.on('after connect', function(msg){
+			console.log('After connect', msg);
+		});
+
+	});
+</script>
+
+<script>
+	/*ESRI libraries used to render a web map.
+	  They are used to get all information regarding a certain location.*/
+	require([
+    "esri/Map", 
+    "esri/views/MapView",
+	"esri/widgets/BasemapGallery",
+	"esri/widgets/Expand",
+    "esri/widgets/CoordinateConversion",
+    "esri/Graphic",
+	"esri/widgets/Sketch",
+	"esri/layers/GraphicsLayer",
+	"esri/widgets/Measurement",
+	 "esri/widgets/Search",
+    "dojo/dom",
+    "dojo/on",
+    "dojo/domReady!"
+		],  function(
+			Map, MapView, BasemapGallery, Expand,
+			CoordinateConversion, Graphic, Sketch, GraphicsLayer, Measurement, Search, dom
+		) {
+		
+		const sketchLayer = new GraphicsLayer();
+		// Set a map using satellite view.
+		map = new Map({
+			basemap: "hybrid",
+			layer: [sketchLayer]
+		});
+
+		// Set map view and center.
+		var view = new MapView({
+			container: "viewDiv", // Reference to the scene div created in step 5
+			map: map, // Reference to the map object created before the scene
+			zoom: 5, // Sets zoom level based on level of detail (LOD)
+			center: [-106.234, 31.555] // Sets center point of view using longitude,latitude
+		});
+
+		var basemapGallery = new BasemapGallery({
+          view: view,
+          container: document.createElement("div")
+        });
+
+		 var searchWidget = new Search({
+          view: view
+        });
+
+		 view.ui.add(searchWidget, {
+          position: "top-left"
+        });
+
+		var bgExpand = new Expand({
+          view: view,
+          content: basemapGallery
+        });
+
+		// Add the expand instance to the ui
+		view.ui.add(bgExpand, "top-left");
+
+		
+		// sendPlantingDate is the id you are setting in the button in your HTML
+		$('#sendPlantingDate').on('click', function(event){
+			var input = document.getElementById("plantingDateID").value; // get input value
+			var plantingDate = {date: input} //declare a new variable in JSON format
+			alert("Date submitted!")
+
+			// using ajax you can send data to your python code
+			$.ajax({
+				type: "POST",
+				url: "{{ url_for("plantingDate") }}",
+				contentType: "application/json",
+				data: JSON.stringify(plantingDate), //here you send the data in JSON format 
+				dataType: "json",
+				success: function(response) {
+					console.log("date:",response); //Print in console you data
+				},
+				error: function(err) {
+					console.log("error", err); // print the error in case
+				}	
+			});
+
+		});
+
+			
+    });
+</script>
+  <body>
+    <div id="container">
+		<div id="viewDiv"></div>
+		
+		<div id="sendCoordDiv2">
+			<form id="form" onsubmit="return false;">
+				<br><input type="text" name="plantingDate" class="text" id="plantingDateID" placeholder="Plating Date yyyy-mm-dd"><br>
+				<!--sendPlantingDate is the id you need to use in your button event-->
+				<center><input type="submit" class="sendCoord" id="sendPlantingDate" name="coords" ></center>
+			</form>
+		</div>
+  </body>
+</html
